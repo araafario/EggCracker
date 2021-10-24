@@ -16,6 +16,10 @@
 #define PWMPIN 27
 #define DIRPIN 26
 
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 8;
+
 #define DHTPIN 14     // Digital pin connected to the DHT sensor
 // Pin that can be used =  3, 4, 5, 12, 13 or 14
 // Pin 15 can work but DHT must be disconnected during program upload.
@@ -32,7 +36,7 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  //PIN 21 - SDA, PIN 22 - SCL
 #define MINTEMP 30 //Min Temerature for the Incubator
 #define MOTORSPEED 50
 
-//#define DEBUG //Uncomment for Printing Variable
+#define DEBUG //Uncomment for Printing Variable
 
 void setup() {
   Serial.begin(115200);
@@ -41,7 +45,8 @@ void setup() {
   pinMode(RELAYPIN_2,OUTPUT);
   pinMode(PWMPIN,OUTPUT);
   pinMode(DIRPIN,OUTPUT);
-  
+  ledcSetup(ledChannel, freq, resolution);
+  ledcAttachPin(PWMPIN, ledChannel);
 
   lcd.init();                      
   lcd.backlight();
@@ -51,7 +56,8 @@ void setup() {
   lcd.clear();
   
   dht.begin();
-  analogWrite(PWMPIN, MOTORSPEED);
+  ledcWrite(PWMPIN, MOTORSPEED);
+
 }
 
 void loop() {
@@ -79,7 +85,7 @@ void loop() {
     Serial.print(F("%  Temperature: "));
     Serial.print(t);
     Serial.print(F("°C "));
-    Serial.print(f);
+    Serial.println(f);
   #endif
 
   //ON - OFF Control for the temperature

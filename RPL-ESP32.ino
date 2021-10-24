@@ -32,8 +32,8 @@ int lcdRows = 2;
 char Xbuffer[20];
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  //PIN 21 - SDA, PIN 22 - SCL
 
-#define MAXTEMP 40 //Max Temperature for the Incubator
-#define MINTEMP 30 //Min Temerature for the Incubator
+#define MAXTEMP 39 //Max Temperature for the Incubator
+#define MINTEMP 37 //Min Temerature for the Incubator
 #define MOTORSPEED 50
 
 #define DEBUG //Uncomment for Printing Variable

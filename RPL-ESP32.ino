@@ -1,6 +1,7 @@
 #include <LiquidCrystal_I2C.h>
 #include "DHT.h"
-
+#include  "WiFi.h" 
+WiFiClient client;
 //========== PINOUT =============//
 /* RELAY1 - 13
  * RELAY2 - 12
@@ -36,10 +37,26 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  //PIN 21 - SDA, PIN 22 - SCL
 #define MINTEMP 37 //Min Temerature for the Incubator
 #define MOTORSPEED 50
 
-#define DEBUG //Uncomment for Printing Variable
+//#define DEBUG //Uncomment for Printing Variable
+
+String thingSpeakAddress = "api.thingspeak.com";
+String writeAPIKey = "VYIHER65R7QOQZQU";
+String tsfield1Name;
+String request_string;
 
 void setup() {
   Serial.begin(115200);
+  
+  WiFi.disconnect();
+  WiFi.begin("HUAWEI-dE3F", "wifirumah");
+  while ((!(WiFi.status() == WL_CONNECTED))) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
   
   pinMode(RELAYPIN_1,OUTPUT);
   pinMode(RELAYPIN_2,OUTPUT);
@@ -62,9 +79,10 @@ void setup() {
 
 void loop() {
  
-  float h = dht.readHumidity();
-  float t = dht.readTemperature(); //Celcius
-  float f = dht.readTemperature(true); //Farenheit
+  //float h = dht.readHumidity();
+  //float t = dht.readTemperature(); //Celcius
+  //float f = dht.readTemperature(true); //Farenheit
+  float h = 0,t = 0,f = 0;
   delay(1000);
   
   //==== WARNING EXPERIMENTAL CODE !! ====//
@@ -107,6 +125,45 @@ void loop() {
   lcd.setCursor(0, 1);
   sprintf(Xbuffer,"TEMP = %.2f C",t);
   lcd.print(Xbuffer);
+  kirim_thingspeak(t,h);
+}
 
-  
+void kirim_thingspeak(float suhu, float hum) {
+  if (client.connect("api.thingspeak.com", 80)) {
+    request_string = "/update?";
+    request_string += "key=";
+    request_string += writeAPIKey;
+    request_string += "&";
+    request_string += "field1";
+    request_string += "=";
+    request_string += suhu;
+    request_string += "&";
+    request_string += "field2";
+    request_string += "=";
+    request_string += hum;
+    Serial.println(String("GET ") + request_string + " HTTP/1.1\r\n" +
+                 "Host: " + thingSpeakAddress + "\r\n" +
+                 "Connection: close\r\n\r\n");
+                 
+    client.print(String("GET ") + request_string + " HTTP/1.1\r\n" +
+                 "Host: " + thingSpeakAddress + "\r\n" +
+                 "Connection: close\r\n\r\n");
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+      if (millis() - timeout > 5000) {
+        Serial.println(">>> Client Timeout !");
+        client.stop();
+        return;
+      }
+    }
+
+    while (client.available()) {
+      String line = client.readStringUntil('\r');
+      Serial.print(line);
+    }
+
+    Serial.println();
+    Serial.println("closing connection");
+
+  }
 }

@@ -15,7 +15,9 @@ WiFiClient client;
 #define RELAYPIN_1 13
 #define RELAYPIN_2 12
 #define PWMPIN 27
-#define DIRPIN 26
+#define DIRAPIN 26
+#define DIRBPIN 25
+
 
 const int freq = 5000;
 const int ledChannel = 0;
@@ -46,12 +48,17 @@ String request_string;
 
 void setup() {
   Serial.begin(115200);
-  
-  WiFi.disconnect();
   WiFi.begin("HUAWEI-dE3F", "wifirumah");
-  while ((!(WiFi.status() == WL_CONNECTED))) {
-    delay(300);
-    Serial.print(".");
+  // Wait for wifi to be connected
+  uint32_t notConnectedCounter = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+      Serial.println("Wifi connecting...");
+      notConnectedCounter++;
+      if(notConnectedCounter > 50) { // Reset board if not connected after 5s
+          Serial.println("Resetting due to Wifi not connecting...");
+          ESP.restart();
+      }
   }
   Serial.println("");
   Serial.println("WiFi connected");
@@ -61,7 +68,8 @@ void setup() {
   pinMode(RELAYPIN_1,OUTPUT);
   pinMode(RELAYPIN_2,OUTPUT);
   pinMode(PWMPIN,OUTPUT);
-  pinMode(DIRPIN,OUTPUT);
+  pinMode(DIRAPIN,OUTPUT);
+  pinMode(DIRBPIN,OUTPUT);
   ledcSetup(ledChannel, freq, resolution);
   ledcAttachPin(PWMPIN, ledChannel);
 
@@ -73,16 +81,18 @@ void setup() {
   lcd.clear();
   
   dht.begin();
+  digitalWrite(DIRAPIN,LOW);
+  digitalWrite(DIRAPIN,HIGH);
   ledcWrite(PWMPIN, MOTORSPEED);
 
 }
 
 void loop() {
  
-  //float h = dht.readHumidity();
-  //float t = dht.readTemperature(); //Celcius
-  //float f = dht.readTemperature(true); //Farenheit
-  float h = 0,t = 0,f = 0;
+  float h = dht.readHumidity();
+  float t = dht.readTemperature(); //Celcius
+  float f = dht.readTemperature(true); //Farenheit
+  //float h = 0,t = 0,f = 0;
   delay(1000);
   
   //==== WARNING EXPERIMENTAL CODE !! ====//

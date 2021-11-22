@@ -19,7 +19,7 @@ WiFiClient client;
 #define DIRBPIN 25
 
 
-const int freq = 5000;
+const int freq = 30000;
 const int ledChannel = 0;
 const int resolution = 8;
 
@@ -32,12 +32,12 @@ DHT dht(DHTPIN, DHTTYPE);
 
 int lcdColumns = 16;
 int lcdRows = 2;
-char Xbuffer[20];
+char Xbuffer[50];
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  //PIN 21 - SDA, PIN 22 - SCL
 
-#define MAXTEMP 39 //Max Temperature for the Incubator
-#define MINTEMP 37 //Min Temerature for the Incubator
-#define MOTORSPEED 50
+#define MAXTEMP 36 //Max Temperature for the Incubator
+#define MINTEMP 34 //Min Temerature for the Incubator
+#define MOTORSPEED 120
 
 //#define DEBUG //Uncomment for Printing Variable
 
@@ -48,21 +48,36 @@ String request_string;
 
 void setup() {
   Serial.begin(115200);
-  WiFi.begin("HUAWEI-dE3F", "wifirumah");
+
+  lcd.init();  
+  delay(100);                    
+  lcd.backlight();
+  delay(100);
+  lcd.setCursor(0, 0);
+  lcd.print("PREPARING ...");
+  delay(5000);
+  lcd.clear();
+  
+//  WiFi.begin("HUAWEI-dE3F", "wifirumah");
+  WiFi.begin("UAF", "ustioairforce");
   // Wait for wifi to be connected
   uint32_t notConnectedCounter = 0;
   while (WiFi.status() != WL_CONNECTED) {
+      lcd.print("Wifi Connecting");
       delay(100);
       Serial.println("Wifi connecting...");
-      notConnectedCounter++;
-      if(notConnectedCounter > 50) { // Reset board if not connected after 5s
-          Serial.println("Resetting due to Wifi not connecting...");
-          ESP.restart();
-      }
+      lcd.clear();
+//      notConnectedCounter++;
+//      if(notConnectedCounter > 50) { // Reset board if not connected after 5s
+//          Serial.println("Resetting due to Wifi not connecting...");
+//          ESP.restart();
+//      }
   }
   Serial.println("");
   Serial.println("WiFi connected");
+  lcd.print("IP address: ");
   Serial.println("IP address: ");
+  lcd.print(WiFi.localIP());
   Serial.println(WiFi.localIP());
   
   pinMode(RELAYPIN_1,OUTPUT);
@@ -70,30 +85,28 @@ void setup() {
   pinMode(PWMPIN,OUTPUT);
   pinMode(DIRAPIN,OUTPUT);
   pinMode(DIRBPIN,OUTPUT);
-  ledcSetup(ledChannel, freq, resolution);
-  ledcAttachPin(PWMPIN, ledChannel);
-
-  lcd.init();                      
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("PREPARING ...");
-  delay(5000);
-  lcd.clear();
-  
+  //ledcSetup(ledChannel, freq, resolution);
+  //ledcAttachPin(PWMPIN, ledChannel);
+    
   dht.begin();
   digitalWrite(DIRAPIN,LOW);
-  digitalWrite(DIRAPIN,HIGH);
-  ledcWrite(PWMPIN, MOTORSPEED);
-
+  digitalWrite(DIRBPIN,HIGH);
+//  ledcWrite(ledChannel, 100);
+  digitalWrite(PWMPIN,HIGH);
+  //ledcWrite(ledChannel, 100);
 }
 
 void loop() {
- 
+  digitalWrite(PWMPIN,HIGH);
+  
   float h = dht.readHumidity();
   float t = dht.readTemperature(); //Celcius
   float f = dht.readTemperature(true); //Farenheit
-  //float h = 0,t = 0,f = 0;
-  delay(1000);
+  
+  delay(2000);
+  digitalWrite(PWMPIN,LOW);
+  delay(2000);
+  digitalWrite(PWMPIN,HIGH);
   
   //==== WARNING EXPERIMENTAL CODE !! ====//
   // Used for re-read the sensor if it's reading failed 
@@ -125,7 +138,8 @@ void loop() {
     digitalWrite(RELAYPIN_1,HIGH);
     digitalWrite(RELAYPIN_2,HIGH);    
   }
-
+  delay(2000);
+  digitalWrite(PWMPIN,LOW);
   lcd.clear();
   
   lcd.setCursor(0, 0);
@@ -136,6 +150,7 @@ void loop() {
   sprintf(Xbuffer,"TEMP = %.2f C",t);
   lcd.print(Xbuffer);
   kirim_thingspeak(t,h);
+  delay(2000);
 }
 
 void kirim_thingspeak(float suhu, float hum) {
